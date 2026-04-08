@@ -1,0 +1,63 @@
+- tm commands
+    - shell commands for tmux session management
+    - prefix: tm
+
+    - new
+        - aliases: n
+        - description: Create a new tmux session
+        - usage: tm new [name]
+        - action: new-session
+
+    - pick
+        - aliases: p
+        - description: Interactive session picker
+        - usage: tm pick
+        - action: picker
+
+    - attach
+        - aliases: a
+        - description: Attach to an existing session
+        - usage: tm attach [name]
+        - action: attach-session
+
+    - list
+        - aliases: l, ls
+        - description: List all active sessions
+        - usage: tm list
+        - action: list-sessions
+
+    - kill
+        - aliases: k
+        - description: Kill a session
+        - usage: tm kill [name]
+        - action: kill-session
+
+    - kill-all
+        - aliases: ka
+        - description: Kill all sessions
+        - usage: tm kill-all
+        - action: kill-server
+
+    - rename
+        - aliases: r
+        - description: Rename a session
+        - usage: tm rename [new-name]
+        - action: rename-session
+
+    - detach
+        - aliases: d
+        - description: Detach from current session
+        - usage: tm detach
+        - action: detach-client
+
+    - windows
+        - aliases: w
+        - description: List windows in current session
+        - usage: tm windows
+        - action: list-windows
+
+    - help
+        - aliases: h, ?
+        - description: Show cheatsheet and help
+        - usage: tm help
+        - action: cheatsheet

@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# tm - tmux session manager
+# Dispatcher for all tm subcommands
+
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+    DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# --- Helper Functions ---
+
+tm_new() {
+    local name="${1:-}"
+    if [[ -z "$name" ]]; then
+        name="$(tm_default_name)"
+    fi
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux new-session -d -s "$name"
+        tmux switch-client -t "$name"
+    else
+        tmux new-session -s "$name"
+    fi
+}
+
+tm_attach() {
+    local name="${1:-}"
+    if [[ -z "$name" ]]; then
+        echo "Usage: tm attach <session-name>"
+        echo "Tip: use 'tm pick' for interactive selection"
+        return 1
+    fi
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux switch-client -t "$name"
+    else
+        tmux attach-session -t "$name"
+    fi
+}
+
+tm_kill() {
+    local name="${1:-}"
+    if [[ -z "$name" ]]; then
+        echo "Usage: tm kill <session-name>"
+        return 1
+    fi
+    tmux kill-session -t "$name"
+}
+
+tm_rename() {
+    local name="${1:-}"
+    if [[ -z "$name" ]]; then
+        echo "Usage: tm rename <new-name>"
+        return 1
+    fi
+    tmux rename-session "$name"
+}
+
+tm_default_name() {
+    local i=1
+    while tmux has-session -t "session-$i" 2>/dev/null; do
+        ((i++))
+    done
+    echo "session-$i"
+}
+
+# --- Main Dispatcher ---
+
+cmd="${1:-help}"
+shift 2>/dev/null || true
+
+case "$cmd" in
+    n|new)
+        tm_new "$@"
+        ;;
+    p|pick)
+        "$SCRIPT_DIR/tm-picker" "$@"
+        ;;
+    a|attach)
+        tm_attach "$@"
+        ;;
+    l|ls|list)
+        tmux list-sessions 2>/dev/null || echo "No active sessions."
+        ;;
+    k|kill)
+        tm_kill "$@"
+        ;;
+    ka|kill-all)
+        tmux kill-server 2>/dev/null && echo "All sessions killed." || echo "No sessions running."
+        ;;
+    r|rename)
+        tm_rename "$@"
+        ;;
+    d|detach)
+        tmux detach-client 2>/dev/null || echo "Not in a tmux session."
+        ;;
+    w|windows)
+        tmux list-windows 2>/dev/null || echo "Not in a tmux session."
+        ;;
+    h|help|\?)
+        "$SCRIPT_DIR/tm-cheatsheet"
+        ;;
+    *)
+        echo "Unknown command: $cmd"
+        echo ""
+        "$SCRIPT_DIR/tm-cheatsheet"
+        exit 1
+        ;;
+esac

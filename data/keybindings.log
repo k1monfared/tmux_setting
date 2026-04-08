@@ -1,0 +1,96 @@
+- tmux keybindings
+    - in-session keybindings for tmux
+    - prefix: Ctrl+T
+
+    - prefix key
+        - Ctrl+T
+            - description: Prefix key (replaces default Ctrl+B)
+            - tmux: set -g prefix C-t
+
+    - session management
+        - Ctrl+T r
+            - description: Rename current session
+            - tmux: bind r command-prompt -I "#S" "rename-session '%%'"
+        - Ctrl+T d
+            - description: Detach from session
+            - tmux: bind d detach-client
+
+    - pane splitting
+        - Ctrl+T \
+            - description: Split vertical (left and right)
+            - tmux: bind \\ split-window -h -c "#{pane_current_path}"
+        - Ctrl+T -
+            - description: Split horizontal (top and bottom)
+            - tmux: bind - split-window -v -c "#{pane_current_path}"
+
+    - pane navigation (no prefix needed)
+        - Ctrl+Left
+            - description: Move to left pane
+            - tmux: bind -n C-Left select-pane -L
+        - Ctrl+Right
+            - description: Move to right pane
+            - tmux: bind -n C-Right select-pane -R
+        - Ctrl+Up
+            - description: Move to pane above
+            - tmux: bind -n C-Up select-pane -U
+        - Ctrl+Down
+            - description: Move to pane below
+            - tmux: bind -n C-Down select-pane -D
+
+    - pane resizing (no prefix needed)
+        - Alt+Left
+            - description: Shrink pane left
+            - tmux: bind -n M-Left resize-pane -L 2
+        - Alt+Right
+            - description: Expand pane right
+            - tmux: bind -n M-Right resize-pane -R 2
+        - Alt+Up
+            - description: Shrink pane up
+            - tmux: bind -n M-Up resize-pane -U 2
+        - Alt+Down
+            - description: Expand pane down
+            - tmux: bind -n M-Down resize-pane -D 2
+
+    - window management
+        - Ctrl+T c
+            - description: Create new window
+            - tmux: bind c new-window -c "#{pane_current_path}"
+        - Ctrl+T ,
+            - description: Rename current window
+            - tmux: bind , command-prompt -I "#W" "rename-window '%%'"
+        - Ctrl+T n
+            - description: Next window
+            - tmux: bind n next-window
+        - Ctrl+T p
+            - description: Previous window
+            - tmux: bind p previous-window
+        - Ctrl+T 0-9
+            - description: Switch to window by number
+            - note: default tmux behavior
+
+    - pane management
+        - Ctrl+T x
+            - description: Close current pane (with confirmation)
+            - tmux: bind x confirm-before -p "Kill pane? (y/n)" kill-pane
+        - Ctrl+T z
+            - description: Zoom or unzoom current pane
+            - tmux: bind z resize-pane -Z
+        - Ctrl+T Space
+            - description: Cycle through pane layouts
+            - tmux: bind Space next-layout
+
+    - mouse scrolling (no prefix needed)
+        - Mouse wheel / Touchpad
+            - description: Scroll through terminal history instead of cycling commands
+            - tmux: bind -n WheelUpPane if-shell ...
+            - note: enters copy mode automatically on scroll up
+
+    - copy mode
+        - Ctrl+T [
+            - description: Enter copy mode (scroll with arrows, PgUp/PgDn)
+            - tmux: bind [ copy-mode
+
+    - help
+        - Ctrl+T ?
+            - description: Show all tmux keybindings
+            - tmux: bind ? list-keys

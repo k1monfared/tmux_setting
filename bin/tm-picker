@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# tm-picker - Interactive tmux session picker using fzf
+# Shows existing sessions and an option to create a new one
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check fzf is available
+if ! command -v fzf &>/dev/null; then
+    echo "Error: fzf is required for the interactive picker."
+    echo "Install it with: sudo apt install fzf"
+    exit 1
+fi
+
+# Generate default session name
+default_name() {
+    local i=1
+    while tmux has-session -t "session-$i" 2>/dev/null; do
+        ((i++))
+    done
+    echo "session-$i"
+}
+
+# Build the list of sessions
+build_list() {
+    echo "+ New Session"
+    if tmux list-sessions -F "#{session_name}|#{session_windows}|#{?session_attached,attached,detached}" 2>/dev/null; then
+        :
+    fi
+}
+
+# Format session lines for display
+format_list() {
+    while IFS= read -r line; do
+        if [[ "$line" == "+ New Session" ]]; then
+            printf "  \033[32m+\033[0m  New Session\n"
+        else
+            local name windows status
+            name="$(echo "$line" | cut -d'|' -f1)"
+            windows="$(echo "$line" | cut -d'|' -f2)"
+            status="$(echo "$line" | cut -d'|' -f3)"
+            if [[ "$status" == "attached" ]]; then
+                printf "  \033[36m●\033[0m  %-20s  %s windows  \033[33m(attached)\033[0m\n" "$name" "$windows"
+            else
+                printf "  \033[90m○\033[0m  %-20s  %s windows\n" "$name" "$windows"
+            fi
+        fi
+    done
+}
+
+# Run fzf picker
+choices="$(build_list | format_list)"
+
+result="$(echo "$choices" | fzf \
+    --ansi \
+    --no-multi \
+    --reverse \
+    --border=rounded \
+    --prompt="  Session > " \
+    --header="  ↑↓ navigate  ·  type to filter  ·  enter to select  ·  esc to cancel" \
+    --header-first \
+    --pointer="▶" \
+    --color="bg+:#2a2a2a,fg+:#ffffff,pointer:#00cc66,prompt:#00cc66,header:#666666,border:#444444" \
+    --height=~50% \
+    --print-query \
+    2>/dev/null)" || {
+    # User pressed Escape or fzf exited
+    exit 0
+}
+
+# Parse fzf output
+# Line 1: query (what user typed)
+# Line 2: selected item
+query="$(echo "$result" | sed -n '1p')"
+selected="$(echo "$result" | sed -n '2p')"
+
+# Strip ANSI codes from selected line
+selected_clean="$(echo "$selected" | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^[[:space:]]*[●○+][[:space:]]*//' | sed 's/[[:space:]]*[0-9]* windows.*$//' | xargs)"
+
+if [[ "$selected_clean" == "New Session" ]]; then
+    # User chose "New Session"
+    if [[ -n "$query" && "$query" != " " ]]; then
+        session_name="$query"
+    else
+        session_name="$(default_name)"
+    fi
+
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux new-session -d -s "$session_name"
+        tmux switch-client -t "$session_name"
+    else
+        tmux new-session -s "$session_name"
+    fi
+else
+    # User selected an existing session
+    # Extract just the session name (first word after stripping)
+    session_name="$(echo "$selected_clean" | awk '{print $1}')"
+
+    if [[ -z "$session_name" ]]; then
+        # Fallback: if query was typed and matches no session, create new
+        if [[ -n "$query" ]]; then
+            session_name="$query"
+            if [[ -n "${TMUX:-}" ]]; then
+                tmux new-session -d -s "$session_name"
+                tmux switch-client -t "$session_name"
+            else
+                tmux new-session -s "$session_name"
+            fi
+        fi
+        exit 0
+    fi
+
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux switch-client -t "$session_name"
+    else
+        tmux attach-session -t "$session_name"
+    fi
+fi

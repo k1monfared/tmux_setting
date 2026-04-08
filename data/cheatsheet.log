@@ -1,0 +1,46 @@
+- tm cheatsheet
+    - tmux session manager
+
+    - shell commands
+        - tm                 Show this cheatsheet
+        - tm n [name]        New session (optional name)
+        - tm p               Interactive session picker
+        - tm a [name]        Attach to session
+        - tm l               List all sessions
+        - tm k [name]        Kill a session
+        - tm ka              Kill all sessions
+        - tm r [name]        Rename session
+        - tm d               Detach from session
+        - tm w               List windows
+
+    - in-session keybindings (prefix: Ctrl+T)
+        - session
+            - Ctrl+T r           Rename session
+            - Ctrl+T d           Detach
+
+        - panes
+            - Ctrl+T \           Split left/right
+            - Ctrl+T -           Split top/bottom
+            - Ctrl+T x           Close pane
+            - Ctrl+T z           Zoom/unzoom pane
+            - Ctrl+T Space       Cycle layouts
+
+        - navigation (no prefix)
+            - Ctrl+Arrows        Move between panes
+            - Alt+Arrows         Resize pane
+            - Mouse/Touchpad     Scroll history (not commands)
+
+        - windows
+            - Ctrl+T c           New window
+            - Ctrl+T ,           Rename window
+            - Ctrl+T n           Next window
+            - Ctrl+T p           Previous window
+            - Ctrl+T 0-9         Switch to window #
+
+        - other
+            - Ctrl+T [           Copy/scroll mode
+            - Ctrl+T ?           Show all keybindings
+
+    - notes
+        - Ctrl+T Ctrl+T sends a literal Ctrl+T to the terminal
+        - Alt+Arrows replaces Fn+Arrows (Fn+Arrow sends Home/End/PgUp/PgDn on most terminals)

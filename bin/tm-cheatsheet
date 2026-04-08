@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# tm-cheatsheet - Display the tm cheatsheet as a compact multi-column table
+
+set -euo pipefail
+
+B=$'\033[1m'
+D=$'\033[2m'
+G=$'\033[32m'
+C=$'\033[36m'
+Y=$'\033[33m'
+W=$'\033[97m'
+GR=$'\033[90m'
+R=$'\033[0m'
+
+# Column visible widths
+W1=15  # left key
+W2=20  # left desc
+W3=14  # right key
+W4=20  # right desc
+
+# Strip ANSI codes to measure visible length
+vlen() { echo -ne "$1" | sed $'s/\033\[[0-9;]*m//g' | wc -c; }
+
+# Repeat a character N times
+rep() { printf "%0.s$1" $(seq 1 "$2"); }
+
+# Print a data row with auto-padding
+row() {
+    local c1="$1" c2="$2" c3="$3" c4="$4"
+    local p1=$(( W1 - $(vlen "$c1") ))
+    local p2=$(( W2 - $(vlen "$c2") ))
+    local p3=$(( W3 - $(vlen "$c3") ))
+    local p4=$(( W4 - $(vlen "$c4") ))
+    printf "  ${GR}│${R} %b%${p1}s ${GR}│${R} %b%${p2}s ${GR}│${R} %b%${p3}s ${GR}│${R} %b%${p4}s ${GR}│${R}\n" \
+        "$c1" "" "$c2" "" "$c3" "" "$c4" ""
+}
+
+L1="$(rep '─' $((W1 + 2)))"
+L2="$(rep '─' $((W2 + 2)))"
+L3="$(rep '─' $((W3 + 2)))"
+L4="$(rep '─' $((W4 + 2)))"
+
+echo ""
+echo "  ${B}${G}tm${R} ${D}tmux session manager${R}"
+echo ""
+printf "  ${GR}┌%s┬%s┬%s┬%s┐${R}\n" "$L1" "$L2" "$L3" "$L4"
+row "${B}${W}Shell Commands${R}" ""                    "${B}${W}Keybindings${R}"  "${D}prefix: Ctrl+T${R}"
+printf "  ${GR}├%s┼%s┼%s┼%s┤${R}\n" "$L1" "$L2" "$L3" "$L4"
+row "${C}tm${R}"              "Show cheatsheet"        "${Y}Session${R}"         ""
+row "${C}tm n${R} ${D}[name]${R}" "New session"        "${C}Ctrl+T r${R}"        "Rename session"
+row "${C}tm p${R}"            "Session picker"         "${C}Ctrl+T d${R}"        "Detach"
+row "${C}tm a${R} ${D}[name]${R}" "Attach to session"  ""                        ""
+row "${C}tm l${R}"            "List sessions"          "${Y}Panes${R}"           ""
+row "${C}tm k${R} ${D}[name]${R}" "Kill session"       "${C}Ctrl+T \\${R}"       "Split left/right"
+row "${C}tm ka${R}"           "Kill all sessions"      "${C}Ctrl+T -${R}"        "Split top/bottom"
+row "${C}tm r${R} ${D}[name]${R}" "Rename session"     "${C}Ctrl+T x${R}"        "Close pane"
+row "${C}tm d${R}"            "Detach"                 "${C}Ctrl+T z${R}"        "Zoom/unzoom pane"
+row "${C}tm w${R}"            "List windows"           "${C}Ctrl+T Space${R}"    "Cycle layouts"
+row ""                        ""                       ""                        ""
+row "${Y}Navigation${R}"      "${D}no prefix${R}"      "${Y}Windows${R}"         ""
+row "${C}Ctrl+Arrows${R}"     "Move between panes"     "${C}Ctrl+T c${R}"        "New window"
+row "${C}Alt+Arrows${R}"      "Resize pane"            "${C}Ctrl+T ,${R}"        "Rename window"
+row "${C}Mouse scroll${R}"    "Scroll history"         "${C}Ctrl+T n/p${R}"      "Next/prev window"
+row ""                        ""                       "${C}Ctrl+T 0-9${R}"      "Switch to window #"
+row "${Y}Other${R}"           ""                       ""                        ""
+row "${C}Ctrl+T [${R}"        "Copy/scroll mode"       "${C}Ctrl+T Ctrl+T${R}"   "Send literal Ctrl+T"
+row "${C}Ctrl+T ?${R}"        "Show all keybindings"   ""                        ""
+printf "  ${GR}└%s┴%s┴%s┴%s┘${R}\n" "$L1" "$L2" "$L3" "$L4"
+echo ""
