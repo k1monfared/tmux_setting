@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# tm-menu - plain-text tmux session chooser (no fzf; robust over any terminal/ssh).
+# Numbered list of sessions: type a number to attach, a name to create it,
+# 'n' for a new auto-named session, 'x' for a plain shell (no tmux).
+
+# Already inside tmux -> do nothing.
+[ -n "${TMUX:-}" ] && exit 0
+
+mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
+
+echo
+echo "  tmux on $(hostname):"
+if ((${#sessions[@]})); then
+    for i in "${!sessions[@]}"; do
+        printf "    %2d) %s\n" "$((i + 1))" "${sessions[$i]}"
+    done
+else
+    echo "    (no existing sessions)"
+fi
+printf "     n) new session\n"
+printf "     x) plain shell\n"
+printf "  choose > "
+read -r choice
+
+case "$choice" in
+    "" | n | N) exec tmux new-session ;;
+    x | X)      exit 0 ;;
+    *[!0-9]*)   exec tmux new-session -A -s "$choice" ;;   # a name -> attach or create
+    *)
+        idx=$(( choice - 1 ))
+        if ((choice >= 1)) && [ -n "${sessions[$idx]:-}" ]; then
+            exec tmux attach -t "${sessions[$idx]}"
+        else
+            echo "  no such number; starting a new session"
+            exec tmux new-session
+        fi ;;
+esac

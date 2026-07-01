@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# tm-login - SSH-login tmux session chooser using terminal_picker_cc/picker.
+# Shows existing sessions plus an inline textbox to type a new name.
+# Attaches to the chosen session, creates the typed one, or (on cancel) drops to a plain shell.
+
+[ -n "${TMUX:-}" ] && exit 0            # already inside tmux -> nothing to do
+
+PICKER="$HOME/public/terminal_picker_cc/picker"
+[ -x "$PICKER" ] || exit 0             # picker not present -> plain shell
+
+mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
+
+sel="$("$PICKER" \
+    --header "tmux on $(hostname) — pick a session, or type a new name below" \
+    --custom --custom-label "new session name..." \
+    "${sessions[@]}")" || exit 0        # Esc / Ctrl-C (exit 130) -> plain shell
+
+[ -z "$sel" ] && exit 0
+exec tmux new-session -A -s "$sel"      # -A: attach if it exists, else create
