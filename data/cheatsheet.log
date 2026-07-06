@@ -41,6 +41,10 @@
             - Ctrl+T [           Copy/scroll mode
             - Ctrl+T ?           Show all keybindings
 
+        - session persistence (auto-saves every 15 min)
+            - Ctrl+T Ctrl+S      Save all sessions
+            - Ctrl+T Ctrl+R      Restore saved sessions
+
     - notes
         - Ctrl+T Ctrl+T sends a literal Ctrl+T to the terminal
         - Alt+Arrows replaces Fn+Arrows (Fn+Arrow sends Home/End/PgUp/PgDn on most terminals)

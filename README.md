@@ -55,6 +55,8 @@ Prefix: `Ctrl+T` (replaces default `Ctrl+B`)
 | `Ctrl+T 0-9` | Switch to window # |
 | `Ctrl+T [` | Copy/scroll mode |
 | `Ctrl+T ?` | Show all keybindings |
+| `Ctrl+T Ctrl+S` | Save all sessions (auto-saves every 15 min) |
+| `Ctrl+T Ctrl+R` | Restore saved sessions |
 
 No prefix needed:
 

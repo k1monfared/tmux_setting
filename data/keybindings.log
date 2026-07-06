@@ -94,3 +94,11 @@
         - Ctrl+T ?
             - description: Show all tmux keybindings
             - tmux: bind ? list-keys
+
+    - session persistence (tmux-resurrect + tmux-continuum plugins)
+        - Ctrl+T Ctrl+S
+            - description: Save all sessions to disk (also auto-saves every 15 min via continuum)
+            - tmux: set -g @plugin 'tmux-plugins/tmux-resurrect' (binding: prefix + Ctrl-s)
+        - Ctrl+T Ctrl+R
+            - description: Restore the most recently saved sessions
+            - tmux: set -g @plugin 'tmux-plugins/tmux-resurrect' (binding: prefix + Ctrl-r)
