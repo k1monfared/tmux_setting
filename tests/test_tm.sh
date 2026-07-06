@@ -23,7 +23,7 @@ bash -n "$PROJECT_DIR/install.sh" && pass "install.sh syntax" || fail "install.s
 bash -n "$PROJECT_DIR/uninstall.sh" && pass "uninstall.sh syntax" || fail "uninstall.sh syntax" "syntax error"
 
 # --- tmux.conf validation ---
-tmux -f "$PROJECT_DIR/conf/tmux.conf" start-server \; kill-server 2>/dev/null \
+tmux -L "tmtest-$$" -f "$PROJECT_DIR/conf/tmux.conf" start-server \; kill-server 2>/dev/null \
     && pass "tmux.conf valid" \
     || fail "tmux.conf valid" "tmux rejected config"
 
@@ -44,12 +44,13 @@ output="$("$PROJECT_DIR/bin/tm" help 2>&1)"
 "$PROJECT_DIR/bin/tm" list &>/dev/null && pass "tm list runs" || pass "tm list runs (no sessions)"
 
 # --- Session lifecycle ---
+TEST_SOCKET="tmtest-$$"
 TEST_SESSION="tm-test-$$"
-tmux new-session -d -s "$TEST_SESSION" 2>/dev/null
-if tmux has-session -t "$TEST_SESSION" 2>/dev/null; then
+tmux -L "$TEST_SOCKET" new-session -d -s "$TEST_SESSION" 2>/dev/null
+if tmux -L "$TEST_SOCKET" has-session -t "$TEST_SESSION" 2>/dev/null; then
     pass "create test session"
-    tmux kill-session -t "$TEST_SESSION" 2>/dev/null
-    if ! tmux has-session -t "$TEST_SESSION" 2>/dev/null; then
+    tmux -L "$TEST_SOCKET" kill-session -t "$TEST_SESSION" 2>/dev/null
+    if ! tmux -L "$TEST_SOCKET" has-session -t "$TEST_SESSION" 2>/dev/null; then
         pass "kill test session"
     else
         fail "kill test session" "session still exists"
@@ -57,6 +58,7 @@ if tmux has-session -t "$TEST_SESSION" 2>/dev/null; then
 else
     fail "create test session" "could not create"
 fi
+tmux -L "$TEST_SOCKET" kill-server 2>/dev/null || true
 
 # --- Scripts are executable ---
 [[ -x "$PROJECT_DIR/bin/tm" ]] && pass "bin/tm is executable" || fail "bin/tm is executable" "not executable"
