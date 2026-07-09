@@ -1,0 +1,86 @@
+- Mouse Text Selection: design notes and where we landed #decision
+    - Last Updated: 2026-07-09
+    - Context: several rounds of back-and-forth trying to make tmux mouse selection
+      feel like a normal terminal. This note records what we tried, why it did not
+      work, and the setup we settled on, so we do not relitigate it later.
+
+- The goal we kept chasing
+    - Drag-select text with the mouse and have it behave like a bare terminal
+        - Selection stays highlighted after the button is released
+        - No jump to the bottom of the scrollback on release
+        - No modal "copy mode" trap: you can just keep typing afterwards
+        - Selecting auto-copies to the system clipboard
+    - Also keep the useful tmux mouse features
+        - Wheel scroll into scrollback
+        - Click a pane to focus it
+        - Drag a border to resize
+
+- The fundamental constraint (the thing to remember) #decision #important
+    - tmux mouse selection is inherently modal: it IS copy-mode. There is no
+      non-modal "select like a terminal" mode. Long-standing tmux feature request
+      that was never implemented (tmux #732).
+    - The Shift-to-bypass is NOT a tmux binding we can change. It is hardcoded in
+      VTE, the engine behind mate-terminal. VTE exposes no setting to invert or
+      disable it. Holding Shift toggles the mouse between "terminal mode" and
+      "application mode" (ghostty discussion #5800, tmux-users list).
+    - Wheel scroll and drag-capture are ONE switch, not two. tmux only receives
+      wheel events while mouse reporting is on, and while mouse reporting is on VTE
+      refuses native selection unless Shift is held. You cannot tell tmux "report
+      the wheel to me but let drags fall through." (tmux #2283, tmux #3200, both
+      closed with no such feature.)
+    - Net: within tmux + mate-terminal you cannot have plain-drag native selection
+      AND wheel scroll at the same time. Pick one, hold Shift, or change terminal.
+
+- What we tried in copy-mode and why each fell short
+    - copy-pipe-and-cancel on drag end (this was the tmux default)
+        - The "-and-cancel" exits copy mode, which clears the highlight and snaps
+          the view to the bottom. This is the "escape on release" annoyance.
+    - copy-pipe-no-clear on drag end
+        - Copies to clipboard, keeps the highlight, stays in copy mode. Fixes the
+          jump and the vanishing highlight.
+        - But the selection stays "live", so scrolling afterwards keeps EXTENDING
+          the selection.
+    - copy-pipe-no-clear + stop-selection on drag end #decision
+        - stop-selection finalizes the selection so it is no longer live. Scrolling
+          afterwards moves the view without growing the selection. This is the
+          current plain-drag behavior.
+        - Remaining unavoidable trade-off: you are still in copy-mode after
+          selecting, so keystrokes go to copy-mode until you press q or Escape.
+    - MouseDown / MouseUp clear-and-exit hacks (earlier attempt, abandoned)
+        - Starting a drag from scrollback jumped to the bottom (mouse-down fires at
+          drag start). Clicking after a selection jumped to the bottom.
+        - Each fix exposed a new edge case. Concluded these hacks are a dead end.
+
+- Options that WOULD give true plain-drag native selection, and why we did not pick them
+    - Turn tmux mouse off entirely (set -g mouse off)
+        - Plain drag becomes true native terminal selection with copy-on-select.
+        - Cost: loses wheel scroll, click-to-focus, and drag-resize. We need wheel
+          scroll, so this is out.
+    - Switch terminal to kitty or WezTerm (both FOSS)
+        - kitty mouse_map has explicit grabbed/ungrabbed states, so plain left-drag
+          can select even while tmux grabs the mouse, and the wheel still reaches
+          tmux. This is the ONLY way to get the real swap plus keep tmux scroll.
+        - Not chosen for now: we decided to stay on mate-terminal.
+
+- Where we landed #decision
+    - Keep set -g mouse on. Two selection modes coexist:
+        - Plain drag = tmux copy-mode selection. On release it copies to the
+          clipboard via xclip, keeps the highlight, and does not jump. Bindings:
+          MouseDragEnd1Pane -> copy-pipe-no-clear "xclip -selection clipboard -in"
+          then stop-selection, in both copy-mode and copy-mode-vi.
+        - Shift+drag = mate-terminal native selection (bypasses tmux). Highlight
+          persists, no copy mode, type immediately. Limited to visible text, not
+          scrollback. Enable "copy on select" in mate-terminal, or Ctrl+Shift+C.
+    - Keyboard copy workflow: prefix [ to enter copy mode, move, select, then
+      Enter or M-w to copy to the clipboard.
+    - The exact swap the user wanted (plain drag native, Shift+drag = tmux) is not
+      achievable on mate-terminal. Revisit only by moving to kitty or WezTerm.
+
+- References
+    - tmux #732  select in normal mode without copy-mode (open, never done)
+    - tmux #2283 disable drag select but keep scroll (closed, no feature)
+    - tmux #3200 scroll without interfering with selecting (closed, no feature)
+    - tmux #2550 disable copy mode while scrolling
+    - ghostty discussion #5800  VTE Shift override is hardcoded, not configurable
+    - odetarou writeup on keeping scroll position with stop-selection
+    - Config lives in conf/tmux.conf under the "Copy Mode" section
