@@ -66,17 +66,22 @@
       scrolling reaches the bottom", and that exit cleared the selection. A frozen
       (stopped) selection does not inhibit -e. Fix: enter with plain "copy-mode"
       (no -e), so hitting the bottom keeps you in copy mode and the bookmark lives.
-    - Single click to leave, without a jump: "exit copy mode" always lands at the
-      live prompt (the bottom), so "exit without jumping" is impossible for a true
-      exit. Compromise via MouseUp1Pane conditional on scroll_position:
-        - Scrolled up: clear-selection only, keep the place, never jump.
-        - At the bottom: cancel, i.e. return to the live prompt (already there, so
-          no visible jump).
-        - To leave while still scrolled up, press q or wheel to the bottom first.
+    - Single click behavior, final form: we iterated through exit-on-click and
+      conditional variants (scroll_position, then selection_present) and rejected
+      them, because a real exit from copy mode ALWAYS lands at the live prompt (the
+      bottom), which is the jump we were trying to avoid. Landed on the simplest
+      thing: MouseUp1Pane -> clear-selection, unconditionally. Every click just
+      removes the highlight, keeps the cursor at the click, does not move the view,
+      and does NOT leave copy mode. To return to the prompt, press q or wheel to the
+      bottom. There is no no-jump way to actually exit copy mode.
+    - Click and the Shift+drag (native) selection: a click can only clear the tmux
+      selection. Shift+drag is a mate-terminal native selection, tmux is not even in
+      copy mode for it, so no tmux command can clear it. In practice native
+      highlights get wiped whenever the pane repaints (same reason they vanish on
+      scroll), so a click usually clears them as a side effect, but it is VTE's
+      behavior, not something the config controls.
     - Double / triple click: switched from copy-pipe-and-cancel to copy-pipe, so
-      they copy the word / line to the clipboard and stay put with no jump. The one
-      caveat is at the bottom, where a click is bound to cancel, so the first click
-      of a double can exit first. While reading (scrolled up) they behave.
+      they copy the word / line to the clipboard and stay put with no jump.
 
 - Options that WOULD give true plain-drag native selection, and why we did not pick them
     - Turn tmux mouse off entirely (set -g mouse off)
@@ -95,8 +100,8 @@
         - Drag = bookmark, no copy. MouseDragEnd1Pane -> stop-selection.
         - Bookmark survives scrolling everywhere, including the bottom. Wheel-up
           enters with plain "copy-mode" (no -e).
-        - Single click leaves without jumping while reading. MouseUp1Pane ->
-          if -F "#{scroll_position}" { clear-selection } { cancel }.
+        - Single click just clears the highlight and stays put, never exits, never
+          jumps. MouseUp1Pane -> clear-selection.
         - Double / triple click copy word / line and stay put. DoubleClick1Pane and
           TripleClick1Pane -> select-word / select-line then copy-pipe "xclip ...".
         - Shift+drag = mate-terminal native selection (bypasses tmux). Highlight
