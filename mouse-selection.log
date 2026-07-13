@@ -1,5 +1,5 @@
 - Mouse Text Selection: design notes and where we landed #decision
-    - Last Updated: 2026-07-09
+    - Last Updated: 2026-07-13
     - Context: several rounds of back-and-forth trying to make tmux mouse selection
       feel like a normal terminal. This note records what we tried, why it did not
       work, and the setup we settled on, so we do not relitigate it later.
@@ -14,6 +14,12 @@
         - Wheel scroll into scrollback
         - Click a pane to focus it
         - Drag a border to resize
+    - A second, later goal: use a selection as a reading BOOKMARK
+        - While reading long scrollback, select a chunk so the eyes can track it
+        - The highlight must survive scrolling anywhere, including the very bottom
+        - No need to copy it, it is purely a visual marker
+        - A single click should leave copy mode, but must NOT yank the view to the
+          bottom while still reading
 
 - The fundamental constraint (the thing to remember) #decision #important
     - tmux mouse selection is inherently modal: it IS copy-mode. There is no
@@ -42,14 +48,35 @@
           the selection.
     - copy-pipe-no-clear + stop-selection on drag end #decision
         - stop-selection finalizes the selection so it is no longer live. Scrolling
-          afterwards moves the view without growing the selection. This is the
-          current plain-drag behavior.
+          afterwards moves the view without growing the selection.
         - Remaining unavoidable trade-off: you are still in copy-mode after
           selecting, so keystrokes go to copy-mode until you press q or Escape.
-    - MouseDown / MouseUp clear-and-exit hacks (earlier attempt, abandoned)
-        - Starting a drag from scrollback jumped to the bottom (mouse-down fires at
-          drag start). Clicking after a selection jumped to the bottom.
-        - Each fix exposed a new edge case. Concluded these hacks are a dead end.
+    - MouseDown clear-and-exit hacks (earlier attempt, abandoned)
+        - Binding the button PRESS to cancel jumped to the bottom when starting a
+          drag from scrollback, because mouse-down fires at drag start. Fix: bind
+          the button RELEASE (MouseUp1Pane), which does not fire at the end of a
+          drag (a drag ends in MouseDragEnd), so bookmarking is safe.
+
+- Reading-bookmark refinements (the second goal) #decision
+    - Drag should NOT copy: dropped copy-pipe from the drag end, left only
+      stop-selection. The drag now freezes a highlight and writes nothing to the
+      clipboard. Copy on purpose with Enter / M-w or Shift+drag.
+    - Bookmark was dying exactly at the bottom: caused by the -e flag on
+      "copy-mode -e" in the wheel-up binding. -e means "auto-exit copy mode when
+      scrolling reaches the bottom", and that exit cleared the selection. A frozen
+      (stopped) selection does not inhibit -e. Fix: enter with plain "copy-mode"
+      (no -e), so hitting the bottom keeps you in copy mode and the bookmark lives.
+    - Single click to leave, without a jump: "exit copy mode" always lands at the
+      live prompt (the bottom), so "exit without jumping" is impossible for a true
+      exit. Compromise via MouseUp1Pane conditional on scroll_position:
+        - Scrolled up: clear-selection only, keep the place, never jump.
+        - At the bottom: cancel, i.e. return to the live prompt (already there, so
+          no visible jump).
+        - To leave while still scrolled up, press q or wheel to the bottom first.
+    - Double / triple click: switched from copy-pipe-and-cancel to copy-pipe, so
+      they copy the word / line to the clipboard and stay put with no jump. The one
+      caveat is at the bottom, where a click is bound to cancel, so the first click
+      of a double can exit first. While reading (scrolled up) they behave.
 
 - Options that WOULD give true plain-drag native selection, and why we did not pick them
     - Turn tmux mouse off entirely (set -g mouse off)
@@ -63,11 +90,15 @@
         - Not chosen for now: we decided to stay on mate-terminal.
 
 - Where we landed #decision
-    - Keep set -g mouse on. Two selection modes coexist:
-        - Plain drag = tmux copy-mode selection. On release it copies to the
-          clipboard via xclip, keeps the highlight, and does not jump. Bindings:
-          MouseDragEnd1Pane -> copy-pipe-no-clear "xclip -selection clipboard -in"
-          then stop-selection, in both copy-mode and copy-mode-vi.
+    - Keep set -g mouse on. The final "reading mode" behavior, all in the copy-mode
+      and copy-mode-vi tables plus one root wheel binding:
+        - Drag = bookmark, no copy. MouseDragEnd1Pane -> stop-selection.
+        - Bookmark survives scrolling everywhere, including the bottom. Wheel-up
+          enters with plain "copy-mode" (no -e).
+        - Single click leaves without jumping while reading. MouseUp1Pane ->
+          if -F "#{scroll_position}" { clear-selection } { cancel }.
+        - Double / triple click copy word / line and stay put. DoubleClick1Pane and
+          TripleClick1Pane -> select-word / select-line then copy-pipe "xclip ...".
         - Shift+drag = mate-terminal native selection (bypasses tmux). Highlight
           persists, no copy mode, type immediately. Limited to visible text, not
           scrollback. Enable "copy on select" in mate-terminal, or Ctrl+Shift+C.
@@ -75,6 +106,10 @@
       Enter or M-w to copy to the clipboard.
     - The exact swap the user wanted (plain drag native, Shift+drag = tmux) is not
       achievable on mate-terminal. Revisit only by moving to kitty or WezTerm.
+    - Two facts that are impossible to escape, do not retry them:
+        - A true exit from copy mode always returns to the bottom (the live prompt).
+        - A frozen selection cannot both stop extending on scroll AND block the -e
+          auto-exit, which is why we removed -e instead.
 
 - References
     - tmux #732  select in normal mode without copy-mode (open, never done)
