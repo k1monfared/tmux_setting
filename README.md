@@ -12,7 +12,18 @@ cd ~/public/tmux_setting
 bash install.sh
 ```
 
-This symlinks `~/.tmux.conf` and adds `tm` to `~/.local/bin/`.
+This symlinks `~/.tmux.conf`, adds `tm` to `~/.local/bin/`, and adds a marker-delimited hook to `~/.bashrc` that launches the session picker on interactive shell start.
+
+## Session picker on shell start
+
+New interactive shells run `bin/tm-login`, which shows the session picker. It drops straight to a plain shell (no picker) when any of these hold:
+
+- already inside a tmux session (`$TMUX` set)
+- VS Code integrated terminal (`TERM_PROGRAM=vscode`)
+- Guake drop-down terminal (`GUAKE_TAB_UUID` set)
+- the picker binary is not installed
+
+`bin/tm-login` is the single source of truth for these skip rules. To exclude another terminal, add a check there.
 
 ## Uninstall
 

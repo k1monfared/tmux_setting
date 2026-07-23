@@ -28,6 +28,16 @@ if [[ -L "$HOME/.tmux.conf" ]]; then
     fi
 fi
 
+# Remove the session-picker hook from ~/.bashrc
+BASHRC="$HOME/.bashrc"
+MARKER_BEGIN="# >>> tmux_setting session picker >>>"
+MARKER_END="# <<< tmux_setting session picker <<<"
+if [[ -f "$BASHRC" ]] && grep -qF "$MARKER_BEGIN" "$BASHRC"; then
+    tmp="$(mktemp)"
+    sed "/$MARKER_BEGIN/,/$MARKER_END/d" "$BASHRC" > "$tmp" && mv "$tmp" "$BASHRC"
+    echo "  Removed session-picker hook from ~/.bashrc"
+fi
+
 echo ""
 echo "  Done. tm has been removed."
 echo ""

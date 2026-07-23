@@ -5,6 +5,10 @@
 
 [ -n "${TMUX:-}" ] && exit 0            # already inside tmux -> nothing to do
 
+# Skip terminals where the picker is unwanted, dropping to a plain shell:
+[ "${TERM_PROGRAM:-}" = "vscode" ] && exit 0   # VS Code integrated terminal
+[ -n "${GUAKE_TAB_UUID:-}" ] && exit 0         # Guake drop-down terminal (sets this per tab)
+
 PICKER="$HOME/public/terminal_picker_cc/picker"
 [ -x "$PICKER" ] || exit 0             # picker not present -> plain shell
 
