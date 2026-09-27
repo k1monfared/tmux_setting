@@ -1,5 +1,5 @@
 - Project Status
-    - Last Updated: 2026-04-07
+    - Last Updated: 2026-09-16
     - Development Mode: Claude Code
     - Stage: POC
     - Next Milestone: Test in real use, refine picker UX
@@ -39,20 +39,32 @@
         - bin/tm: Main dispatcher
         - bin/tm-picker: Interactive fzf session picker
         - bin/tm-cheatsheet: ANSI formatted cheatsheet
-        - conf/tmux.conf: tmux configuration (Ctrl+T prefix)
+        - bin/tm-clip: Clipboard helper for copy-mode (xclip, wl-copy, termux-clipboard-set, pbcopy)
+        - conf/tmux.conf: Shared tmux configuration (Ctrl+T prefix)
+        - conf/profiles/*.conf: Per-machine profiles (laptop, server, phone) symlinked to ~/.tmux.conf.local
         - data/: loglog data files for commands, keybindings, cheatsheet
-        - install.sh: Symlinks config and binary
+        - install.sh: Installs config, profile, symlinks, TPM bootstrap
     - Architecture Notes:
         - Data-driven: commands and keybindings defined in data/ files
         - Ctrl+T prefix replaces Ctrl+B
         - Alt+Arrows for resize (Fn+Arrows not portable on Linux)
         - Mouse wheel enters copy mode for scrolling history
+        - Role-agnostic shared config + per-machine profile sourced last via ~/.tmux.conf.local
+        - Machine identity in the status bar comes from @machine_color and optional @machine_label
+        - TPM plugin loading is gated by @enable_plugins, set in the profile
+        - install.sh detects Termux (pkg/$PREFIX) vs Linux (apt/~/.local/bin)
+        - Host-specific values (hostnames, machine names) stay out of the repo
 
 - Current Focus
     - Active Tasks:
         - [x] Core implementation complete
     - Recent Progress:
         - 2026-04-07: Initial implementation of all components
+        - 2026-09-16: Canonicalized for multiple machines: shared config + role profiles
+        - 2026-09-16: Added Termux/Android support and phone profile
+        - 2026-09-16: Replaced xclip-only copy bindings with tm-clip helper
+        - 2026-09-16: install.sh gained --profile, platform detection, TPM bootstrap
+        - 2026-09-16: tm-login header shows @machine_label when set (phone) else hostname
 
 - Notes
     - Use loglog format for all documentation

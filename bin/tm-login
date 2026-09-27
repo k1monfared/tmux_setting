@@ -12,10 +12,14 @@
 PICKER="$HOME/public/terminal_picker_cc/picker"
 [ -x "$PICKER" ] || exit 0             # picker not present -> plain shell
 
+# Prefer the tmux profile's @machine_label (e.g. "phone"), else the hostname
+label="$(tmux show -gv @machine_label 2>/dev/null || true)"
+[ -z "$label" ] && label="$(hostname)"
+
 mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
 
 sel="$("$PICKER" \
-    --header "tmux on $(hostname) — pick a session, or type a new name below" \
+    --header "tmux on $label: pick a session, or type a new name below" \
     --custom --custom-label "new session name..." \
     "${sessions[@]}")" || exit 0        # Esc / Ctrl-C (exit 130) -> plain shell
 

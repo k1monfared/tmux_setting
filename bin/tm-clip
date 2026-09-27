@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# tm-clip - copy stdin to the system clipboard using whatever tool exists.
+# Used by the tmux copy-mode bindings (see conf/tmux.conf). Exits 0 even when
+# no clipboard tool is available: the selection then only lives in the tmux
+# buffer (paste with prefix ]).
+
+set -u
+
+tmp="$(mktemp)" || exit 0
+trap 'rm -f "$tmp"' EXIT
+cat > "$tmp"
+
+if command -v xclip >/dev/null 2>&1 && [ -n "${DISPLAY:-}" ]; then
+    xclip -selection clipboard -in < "$tmp"
+elif command -v wl-copy >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    wl-copy < "$tmp"
+elif command -v termux-clipboard-set >/dev/null 2>&1; then
+    termux-clipboard-set < "$tmp"
+elif command -v pbcopy >/dev/null 2>&1; then
+    pbcopy < "$tmp"
+fi
+
+exit 0

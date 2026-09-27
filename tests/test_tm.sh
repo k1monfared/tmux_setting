@@ -8,8 +8,8 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 PASS=0
 FAIL=0
 
-pass() { ((PASS++)); echo "  PASS  $1"; }
-fail() { ((FAIL++)); echo "  FAIL  $1: $2"; }
+pass() { PASS=$((PASS + 1)); echo "  PASS  $1"; }
+fail() { FAIL=$((FAIL + 1)); echo "  FAIL  $1: $2"; }
 
 echo ""
 echo "  Running tm tests..."
@@ -19,6 +19,9 @@ echo ""
 bash -n "$PROJECT_DIR/bin/tm" && pass "bin/tm syntax" || fail "bin/tm syntax" "syntax error"
 bash -n "$PROJECT_DIR/bin/tm-picker" && pass "bin/tm-picker syntax" || fail "bin/tm-picker syntax" "syntax error"
 bash -n "$PROJECT_DIR/bin/tm-cheatsheet" && pass "bin/tm-cheatsheet syntax" || fail "bin/tm-cheatsheet syntax" "syntax error"
+bash -n "$PROJECT_DIR/bin/tm-clip" && pass "bin/tm-clip syntax" || fail "bin/tm-clip syntax" "syntax error"
+bash -n "$PROJECT_DIR/bin/tm-login" && pass "bin/tm-login syntax" || fail "bin/tm-login syntax" "syntax error"
+bash -n "$PROJECT_DIR/bin/tm-menu" && pass "bin/tm-menu syntax" || fail "bin/tm-menu syntax" "syntax error"
 bash -n "$PROJECT_DIR/install.sh" && pass "install.sh syntax" || fail "install.sh syntax" "syntax error"
 bash -n "$PROJECT_DIR/uninstall.sh" && pass "uninstall.sh syntax" || fail "uninstall.sh syntax" "syntax error"
 
@@ -64,6 +67,27 @@ tmux -L "$TEST_SOCKET" kill-server 2>/dev/null || true
 [[ -x "$PROJECT_DIR/bin/tm" ]] && pass "bin/tm is executable" || fail "bin/tm is executable" "not executable"
 [[ -x "$PROJECT_DIR/bin/tm-picker" ]] && pass "bin/tm-picker is executable" || fail "bin/tm-picker is executable" "not executable"
 [[ -x "$PROJECT_DIR/bin/tm-cheatsheet" ]] && pass "bin/tm-cheatsheet is executable" || fail "bin/tm-cheatsheet is executable" "not executable"
+[[ -x "$PROJECT_DIR/bin/tm-clip" ]] && pass "bin/tm-clip is executable" || fail "bin/tm-clip is executable" "not executable"
+
+# --- Profiles ---
+for p in "$PROJECT_DIR"/conf/profiles/*.conf; do
+    name="$(basename "$p" .conf)"
+    prof_socket="tmtest-prof-$name-$$"
+    tmux -L "$prof_socket" -f /dev/null new-session -d 2>/dev/null
+    if tmux -L "$prof_socket" source-file "$p" 2>/dev/null; then
+        pass "profile $name sources"
+    else
+        fail "profile $name sources" "tmux rejected profile"
+    fi
+    tmux -L "$prof_socket" kill-server 2>/dev/null || true
+done
+
+# --- tm-clip ---
+if printf 'test\n' | "$PROJECT_DIR/bin/tm-clip"; then
+    pass "tm-clip runs"
+else
+    fail "tm-clip runs" "non-zero exit"
+fi
 
 # --- Summary ---
 echo ""
