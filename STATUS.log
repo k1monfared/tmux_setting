@@ -1,5 +1,5 @@
 - Project Status
-    - Last Updated: 2026-09-16
+    - Last Updated: 2026-10-08
     - Development Mode: Claude Code
     - Stage: POC
     - Next Milestone: Test in real use, refine picker UX
@@ -14,7 +14,7 @@
         - Goal: Working tm command with session management and interactive picker
         - Success criteria:
             - [x] Shell commands (tm n, tm p, tm l, tm k, etc.) work
-            - [x] Interactive fzf session picker works
+            - [x] Interactive session picker works
             - [x] tmux.conf with Ctrl+T prefix and all keybindings
             - [x] Mouse/touchpad scrolling works
             - [x] Cheatsheet prints to terminal
@@ -34,10 +34,12 @@
     - Tech Stack:
         - Bash scripts
         - tmux 3.4
-        - fzf 0.44.1
+        - terminal_picker_cc (Python curses) for the interactive session picker
     - Key Files:
         - bin/tm: Main dispatcher
-        - bin/tm-picker: Interactive fzf session picker
+        - bin/tm-picker: Interactive session picker (terminal_picker_cc; tm-menu fallback)
+        - bin/tm-login: Shell-login entry to tm-picker (skip rules for tmux/vscode/guake)
+        - bin/tm-menu: Plain-text numbered chooser, used when the graphical picker is absent
         - bin/tm-cheatsheet: ANSI formatted cheatsheet
         - bin/tm-clip: Clipboard helper for copy-mode (xclip, wl-copy, termux-clipboard-set, pbcopy)
         - conf/tmux.conf: Shared tmux configuration (Ctrl+T prefix)
@@ -65,6 +67,8 @@
         - 2026-09-16: Replaced xclip-only copy bindings with tm-clip helper
         - 2026-09-16: install.sh gained --profile, platform detection, TPM bootstrap
         - 2026-09-16: tm-login header shows @machine_label when set (phone) else hostname
+        - 2026-10-08: set-titles-string shows @cc_mark for Claude Code panes
+        - 2026-10-08: replaced the fzf picker with terminal_picker_cc; tm-picker now renders a colored table (icon, name, windows, attached) with the new-session textbox first, and tm-login delegates to tm-picker
 
 - Notes
     - Use loglog format for all documentation

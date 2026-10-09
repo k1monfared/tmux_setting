@@ -1,27 +1,18 @@
 #!/usr/bin/env bash
-# tm-login - SSH-login tmux session chooser using terminal_picker_cc/picker.
-# Shows existing sessions plus an inline textbox to type a new name.
-# Attaches to the chosen session, creates the typed one, or (on cancel) drops to a plain shell.
+# tm-login - shell-login entry to the tmux session picker.
+# Runs on interactive shell start. Skips (dropping to a plain shell) when
+# already inside tmux, in VS Code, in Guake, or when the graphical picker is
+# absent. Delegates the actual choosing to tm-picker.
 
-[ -n "${TMUX:-}" ] && exit 0            # already inside tmux -> nothing to do
-
-# Skip terminals where the picker is unwanted, dropping to a plain shell:
+[ -n "${TMUX:-}" ] && exit 0                # already inside tmux -> nothing to do
 [ "${TERM_PROGRAM:-}" = "vscode" ] && exit 0   # VS Code integrated terminal
-[ -n "${GUAKE_TAB_UUID:-}" ] && exit 0         # Guake drop-down terminal (sets this per tab)
+[ -n "${GUAKE_TAB_UUID:-}" ] && exit 0         # Guake drop-down terminal
 
-PICKER="$HOME/public/terminal_picker_cc/picker"
-[ -x "$PICKER" ] || exit 0             # picker not present -> plain shell
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Prefer the tmux profile's @machine_label (e.g. "phone"), else the hostname
-label="$(tmux show -gv @machine_label 2>/dev/null || true)"
-[ -z "$label" ] && label="$(hostname)"
+# The graphical picker must be present; otherwise drop to a plain shell.
+if ! command -v picker >/dev/null 2>&1 && [[ ! -x "$HOME/public/terminal_picker_cc/picker" ]]; then
+    exit 0
+fi
 
-mapfile -t sessions < <(tmux list-sessions -F '#S' 2>/dev/null)
-
-sel="$("$PICKER" \
-    --header "tmux on $label: pick a session, or type a new name below" \
-    --custom --custom-label "new session name..." \
-    "${sessions[@]}")" || exit 0        # Esc / Ctrl-C (exit 130) -> plain shell
-
-[ -z "$sel" ] && exit 0
-exec tmux new-session -A -s "$sel"      # -A: attach if it exists, else create
+exec "$SCRIPT_DIR/tm-picker"

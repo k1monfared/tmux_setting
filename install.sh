@@ -67,14 +67,21 @@ if ! command -v tmux &>/dev/null; then
     fi
     exit 1
 fi
-command -v fzf &>/dev/null || echo "  Note: fzf not found (only needed by 'tm pick')"
-command -v python3 &>/dev/null || echo "  Note: python3 not found (only needed for the login picker)"
+# The session picker is terminal_picker_cc/picker (on PATH or under ~/public).
+# Without it, 'tm pick' falls back to the plain-text tm-menu.
+if ! command -v picker &>/dev/null && [[ ! -x "$HOME/public/terminal_picker_cc/picker" ]]; then
+    echo "  Note: terminal_picker_cc not found; 'tm pick' falls back to the plain-text chooser."
+    echo "        Get it from https://github.com/k1monfared/terminal_picker_cc"
+fi
+command -v python3 &>/dev/null || echo "  Note: python3 not found (needed by the terminal_picker_cc picker)"
 
 # Make scripts executable
 chmod +x "$SCRIPT_DIR/bin/tm"
 chmod +x "$SCRIPT_DIR/bin/tm-picker"
 chmod +x "$SCRIPT_DIR/bin/tm-cheatsheet"
 chmod +x "$SCRIPT_DIR/bin/tm-clip"
+chmod +x "$SCRIPT_DIR/bin/tm-login"
+chmod +x "$SCRIPT_DIR/bin/tm-menu"
 
 # Symlink tmux.conf (shared config)
 if [[ -f "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]]; then

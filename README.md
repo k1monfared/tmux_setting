@@ -1,8 +1,8 @@
 # tm: tmux session manager
 
-**Status**: 🔴 POC | **Mode**: 🤖 Claude Code | **Updated**: 2026-09-16
+**Status**: 🔴 POC | **Mode**: 🤖 Claude Code | **Updated**: 2026-10-08
 
-Easy tmux session management with `tm` shell commands and `Ctrl+T` in-session keybindings. Includes an interactive fzf session picker.
+Easy tmux session management with `tm` shell commands and `Ctrl+T` in-session keybindings. Includes an interactive session picker built on [terminal_picker_cc](https://github.com/k1monfared/terminal_picker_cc).
 
 ## Install
 
@@ -28,7 +28,9 @@ A profile can override anything from the shared config: `@machine_label`, `@mach
 
 ## Session picker on shell start
 
-New interactive shells run `bin/tm-login`, which shows the session picker. It drops straight to a plain shell (no picker) when any of these hold:
+New interactive shells run `bin/tm-login`, which shows the session picker. The picker lists sessions in a colored table (attached/detached icon, window count) with a type-to-create row first: type a name and press Enter to create it, or pick an existing session to attach. Enter on an empty create row does nothing. `tm p` runs the same picker.
+
+`bin/tm-login` drops straight to a plain shell (no picker) when any of these hold:
 
 - already inside a tmux session (`$TMUX` set)
 - VS Code integrated terminal (`TERM_PROGRAM=vscode`)
@@ -101,8 +103,9 @@ No prefix needed:
 
 - tmux 3.4+
 - bash
-- Optional: fzf 0.44+ (for `tm pick`), python3 (for the login picker), git (for TPM plugin bootstrap and plugins)
-- Linux: `sudo apt install tmux fzf` · Termux: `pkg install tmux fzf git python`
+- python3 and terminal_picker_cc for the session picker (`tm p` and shell start); without it, `tm pick` falls back to the plain-text `tm-menu`
+- Optional: git (for TPM plugin bootstrap and plugins)
+- Linux: `sudo apt install tmux python3` · Termux: `pkg install tmux python git`
 
 ## Documentation
 
