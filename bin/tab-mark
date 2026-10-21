@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# tab-mark - the one place that turns an agent state into a tab marker (the
+# colored dot) and delivers it. Callers (opencode plugin, Claude Code hook)
+# only say WHAT happened; glyphs live in share/marks.json.
+#
+#   tab-mark set <oc|cc> <state> [done total]   state: a key of "marks",
+#                                               "todo" (needs done/total), or
+#                                               "off" (blink-off frame)
+#   tab-mark clear <oc|cc>
+#
+# Delivery:
+#   in tmux      -> session option @oc_mark / @cc_mark (tmux.conf's
+#                   set-titles-string puts it in the outer tab title)
+#   plain tab    -> mark kept in a per-tty file and the title is re-emitted
+#                   with an OSC escape; zsh/tabs.zsh reads the same file so
+#                   the next prompt keeps the dot, and clears it on return.
+
+set -u
+SRC="${BASH_SOURCE[0]}"
+while [[ -L "$SRC" ]]; do D="$(cd "$(dirname "$SRC")" && pwd)"; SRC="$(readlink "$SRC")"; [[ "$SRC" != /* ]] && SRC="$D/$SRC"; done
+HERE="$(cd "$(dirname "$SRC")" && pwd)"
+MARKS="${TAB_MARKS_JSON:-$HERE/../data/marks.json}"
+
+# Fast, dependency-free lookup of "key": "value" in the flat marks file.
+mark_of() { python3 -I -c '
+import json,sys
+sys.stdout.reconfigure(encoding="utf-8")  # tmux/hook locales are often C
+d=json.load(open(sys.argv[1],encoding="utf-8")); k=sys.argv[2]
+if k=="off":
+    import os,re,subprocess
+    def run(*c):
+        try: return subprocess.run(c,capture_output=True,text=True).stdout.strip()
+        except OSError: return ""
+    env=os.environ.get("OC_TAB_BG","")          # force: dark|light
+    if env in ("dark","light"): dark=env=="dark"
+    elif sys.platform=="darwin": dark=run("defaults","read","-g","AppleInterfaceStyle")=="Dark"
+    else:                                        # GNOME; Yaru has dark tab bars
+        dark=("prefer-dark" in run("gsettings","get","org.gnome.desktop.interface","color-scheme")
+              or bool(re.search("dark|ya?ru",run("gsettings","get","org.gnome.desktop.interface","gtk-theme"),re.I))
+              or not run("gsettings","get","org.gnome.desktop.interface","gtk-theme"))
+    print(d["blink_off"]["dark" if dark else "light"],end="")
+elif k.startswith("circle:"):
+    print(d["circle"][int(k[7:])],end="")
+else:
+    print(d["marks"].get(k,""),end="")
+' "$MARKS" "$1"; }
+
+render() {  # state [done total] -> glyph text
+    local state="$1" done_="${2:-0}" total="${3:-0}" lvl
+    if [[ "$state" == todo ]]; then
+        (( total > 0 )) || { mark_of circle:1; return; }
+        lvl=$(( done_ * 4 / total )); (( lvl < 1 )) && lvl=1; (( lvl > 4 )) && lvl=4
+        printf '%s %s/%s' "$(mark_of "circle:$lvl")" "$done_" "$total"
+    else
+        mark_of "$state"
+    fi
+}
+
+tty_key() { local t; t="$(ps -o tty= -p $$ 2>/dev/null | tr -d ' ')"; echo "${t//\//_}"; }
+STATE_DIR="${TMPDIR:-/tmp}/tab-mark-$(id -u)"
+
+deliver() {  # tool text
+    local tool="$1" text="$2"
+    if [[ -n "${TMUX:-}" ]]; then
+        tmux set-option -q ${TMUX_PANE:+-t "$TMUX_PANE"} "@${tool}_mark" "$text" 2>/dev/null
+    else
+        mkdir -p "$STATE_DIR" && printf '%s' "$text" > "$STATE_DIR/$(tty_key)"
+        { printf '\033]0;%s%s\007' "${text:+$text }" "${PWD##*/}" > /dev/tty; } 2>/dev/null
+    fi
+}
+
+case "${1:-}" in
+    set)   [[ $# -ge 3 ]] || { echo "usage: tab-mark set <oc|cc> <state> [done total]" >&2; exit 2; }
+           deliver "$2" "$(render "$3" "${4:-0}" "${5:-0}")" ;;
+    clear) [[ $# -ge 2 ]] || { echo "usage: tab-mark clear <oc|cc>" >&2; exit 2; }
+           deliver "$2" "" ;;
+    *)     echo "usage: tab-mark set|clear ..." >&2; exit 2 ;;
+esac

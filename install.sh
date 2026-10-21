@@ -82,6 +82,7 @@ chmod +x "$SCRIPT_DIR/bin/tm-cheatsheet"
 chmod +x "$SCRIPT_DIR/bin/tm-clip"
 chmod +x "$SCRIPT_DIR/bin/tm-login"
 chmod +x "$SCRIPT_DIR/bin/tm-menu"
+chmod +x "$SCRIPT_DIR/bin/tab-mark" "$SCRIPT_DIR/claude/tab-hook.sh"
 
 # Symlink tmux.conf (shared config)
 if [[ -f "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]]; then
@@ -114,6 +115,11 @@ fi
 # ~/.local/bin on every platform.
 ln -sf "$SCRIPT_DIR/bin/tm-clip" "$HOME/.local/bin/tm-clip"
 echo "  Linked ~/.local/bin/tm-clip"
+
+# tab-mark: shared dot/marker command used by the opencode plugin and the
+# Claude Code hook (claude/tab-hook.sh); also titles plain, non-tmux tabs.
+ln -sf "$SCRIPT_DIR/bin/tab-mark" "$HOME/.local/bin/tab-mark"
+echo "  Linked ~/.local/bin/tab-mark"
 
 # Install the session-picker hook into ~/.bashrc (idempotent, marker-delimited).
 # tm-login itself decides when to skip (inside tmux, VS Code, Guake, no picker).

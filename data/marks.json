@@ -1,0 +1,13 @@
+{
+  "marks": {
+    "permission": "🟠",
+    "error": "🔴",
+    "question": "🟣",
+    "done": "🔵",
+    "retry": "🟡",
+    "busy": "🟢",
+    "idle": ""
+  },
+  "circle": ["○", "◔", "◑", "◕", "●"],
+  "blink_off": { "dark": "⚫", "light": "⚪" }
+}
