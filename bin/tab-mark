@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tab-mark - the one place that turns an agent state into a tab marker (the
 # colored dot) and delivers it. Callers (opencode plugin, Claude Code hook)
-# only say WHAT happened; glyphs live in share/marks.json.
+# only say WHAT happened; glyphs live in data/marks.json.
 #
 #   tab-mark set <oc|cc> <state> [done total]   state: a key of "marks",
 #                                               "todo" (needs done/total), or
