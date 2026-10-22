@@ -49,7 +49,7 @@ sel="$("$PICKER" \
     --custom --custom-first \
     --custom-label "{green}+{/}  {dim}new session name...{/}" \
     --marker "▶ " \
-    "${rows[@]}")" || exit 0
+    ${rows[@]+"${rows[@]}"})" || exit 0
 
 [[ -z "$sel" ]] && exit 0
 exec tmux new-session -A -s "$sel"
